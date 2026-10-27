@@ -54,15 +54,15 @@ import javax.inject.Inject
 class ContactsViewModel @Inject constructor(
     sharing: Boolean,
     serializedChips: HashMap<String, String?>,
+    contactAddedListener: ContactAddedListener,
     private val contactFilter: ContactFilter,
     private val contactGroupFilter: ContactGroupFilter,
     private val contactsRepo: ContactRepository,
     private val conversationRepo: ConversationRepository,
     private val phoneNumberUtils: PhoneNumberUtils,
     private val setDefaultPhoneNumber: SetDefaultPhoneNumber,
-    contactAddedListener: ContactAddedListener,
-    permissionManager: PermissionManager,
-    syncContacts: SyncContacts
+    private val permissionManager: PermissionManager,
+    private val syncContacts: SyncContacts
 ) : QkViewModel<ContactsContract, ContactsState>(ContactsState()) {
 
     private val contactGroups: Observable<List<ContactGroup>> by lazy { contactsRepo.getUnmanagedContactGroups() }
@@ -85,10 +85,6 @@ class ContactsViewModel @Inject constructor(
     init {
         disposables += syncContacts
 
-        // The contacts cache in Realm is otherwise only synced while the conversation list (MainViewModel) is open,
-        // so a contact added in another app was missing here when QUIK was opened straight into this screen, e.g.
-        // by sharing into QUIK from another app. Sync when the screen opens and whenever contacts change; the
-        // contact queries above observe Realm, so the list updates once the sync is done
         if (permissionManager.hasContacts()) {
             disposables += contactAddedListener.listen()
                     .debounce(1, TimeUnit.SECONDS)
